@@ -1,26 +1,29 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+from flask_jwt_extended import JWTManager, create_access_token
 from flask_bcrypt import Bcrypt
 from models import db, User
 import os
 
 app = Flask(__name__)
+
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Configuration
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///kanva.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['JWT_SECRET_KEY'] = 'super-secret-key'  # Change this in production!
+app.config['JWT_SECRET_KEY'] = os.environ.get("JWT_SECRET_KEY", "super-secret-key")
 
-# Initialize extensions
 db.init_app(app)
 bcrypt = Bcrypt(app)
 jwt = JWTManager(app)
 
-# Create database tables
 with app.app_context():
     db.create_all()
+
+@app.route("/")
+def home():
+    return "Backend is running!"
 
 @app.route('/api/auth/signup', methods=['POST'])
 def signup():
@@ -60,5 +63,7 @@ def login():
     
     return jsonify({'message': 'Invalid credentials'}), 401
 
-if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
